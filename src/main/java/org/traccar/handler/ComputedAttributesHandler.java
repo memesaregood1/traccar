@@ -25,6 +25,7 @@ import org.apache.commons.jexl3.MapContext;
 import org.apache.commons.jexl3.introspection.JexlSandbox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.traccar.api.resource.ComputedAttributeTask;
 import org.traccar.config.Config;
 import org.traccar.config.Keys;
 import org.traccar.model.Attribute;
@@ -138,8 +139,8 @@ public class ComputedAttributesHandler extends BasePositionHandler {
                 .execute(prepareContext(position));
     }
 
-    @Override
-    public void handlePosition(Position position, Callback callback) {
+
+    public void handlePosition2(Position position, Callback callback) {
         var attributes = cacheManager.getDeviceObjects(position.getDeviceId(), Attribute.class).stream()
                 .sorted(Comparator.comparing(Attribute::getPriority).reversed())
                 .toList();
@@ -185,5 +186,20 @@ public class ComputedAttributesHandler extends BasePositionHandler {
         }
         callback.processed(false);
     }
+    @Override
+    public void handlePosition(Position position, Callback callback) {
+        // Create a new thread for computed attribute processing
+        System.out.println("Called handlePosition");
+        ComputedAttributeTask task = new ComputedAttributeTask(this);
+        Thread thread = new Thread(task);
+        thread.start();
+
+        // Add position to the queue
+        task.addPosition(position);
+
+        // Signal to the main thread that the position is processed
+        callback.processed(false);
+    }
+
 
 }

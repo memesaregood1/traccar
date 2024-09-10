@@ -23,6 +23,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.traccar.api.resource.ComputedAttributeTask;
 import org.traccar.config.Config;
 import org.traccar.database.BufferingManager;
 import org.traccar.database.NotificationManager;
@@ -61,12 +62,14 @@ import org.traccar.helper.PositionLogger;
 import org.traccar.model.Position;
 import org.traccar.session.cache.CacheManager;
 
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Singleton
@@ -167,7 +170,14 @@ public class ProcessingHandler extends ChannelInboundHandlerAdapter implements B
 
     private void processPositionHandlers(ChannelHandlerContext ctx, Position position) {
         var iterator = positionHandlers.iterator();
-        iterator.next().handlePosition(position, new BasePositionHandler.Callback() {
+        BasePositionHandler next = iterator.next();
+        if (next.getClass().getName() == "org.traccar.handler.ComputedAttributesHandler") {
+            ComputedAttributesHandler handler = (ComputedAttributesHandler) next;
+            ComputedAttributeTask computedAttributeTask = new ComputedAttributeTask(handler);
+            Thread computedAttributesThread = new Thread(computedAttributeTask);
+            computedAttributesThread.start();
+        }
+        next.handlePosition(position, new BasePositionHandler.Callback() {
             @Override
             public void processed(boolean filtered) {
                 if (!filtered) {

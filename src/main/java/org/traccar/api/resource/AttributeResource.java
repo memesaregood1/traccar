@@ -41,6 +41,8 @@ import org.traccar.storage.query.Request;
 @Path("attributes/computed")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+
+
 public class AttributeResource extends ExtendedObjectResource<Attribute> {
 
     @Inject
@@ -59,6 +61,7 @@ public class AttributeResource extends ExtendedObjectResource<Attribute> {
         Position position = storage.getObject(Position.class, new Request(
                 new Columns.All(),
                 new Condition.LatestPositions(deviceId)));
+
 
         Object result = computedAttributesHandler.computeAttribute(entity, position);
         if (result != null) {
